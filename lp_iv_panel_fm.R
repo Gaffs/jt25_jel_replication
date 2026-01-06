@@ -296,15 +296,25 @@ lp_iv_panel_fm <- function(df,
     # Run IV regression
     model <- ivreg(formula_iv, data = reg_data_demeaned)
 
-    # Cluster-robust standard errors
-    vcov_cluster <- vcovCL(model, cluster = reg_data[[group_var]], type = "HC1")
-    coef_test <- coeftest(model, vcov = vcov_cluster)
+    # Check number of groups
+    n_groups <- length(unique(reg_data[[group_var]]))
+
+    # Use cluster-robust SEs if more than 1 group, otherwise use normal SEs
+    if (n_groups > 1) {
+      cat("    Using cluster-robust standard errors (", n_groups, " groups)\n")
+      vcov_cluster <- vcovCL(model, cluster = reg_data[[group_var]], type = "HC1")
+      coef_test <- coeftest(model, vcov = vcov_cluster)
+    } else {
+      cat("    Using normal standard errors (only 1 group)\n")
+      coef_test <- coeftest(model)
+    }
 
     # Store model
     lp_models[[h + 1]] <- list(
       model = model,
       coef_test = coef_test,
-      n_obs = n_obs
+      n_obs = n_obs,
+      n_groups = n_groups
     )
 
     # Extract coefficient for treatment variable
